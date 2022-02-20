@@ -68,9 +68,9 @@ def generate_dataset():
   """
   Generate dataset with specific classes
   """
-  df1 = pd.DataFrame(generate_entries(100, 1, 5, LABELS[0]), columns=COLUMNS)
-  df2 = pd.DataFrame(generate_entries(100, 5, 10, LABELS[1]), columns=COLUMNS)
-  df3 = pd.DataFrame(generate_entries(100, 1, 10, LABELS[2]), columns=COLUMNS)
+  df1 = pd.DataFrame(generate_entries(200, 1, 5, LABELS[0]), columns=COLUMNS)
+  df2 = pd.DataFrame(generate_entries(200, 5, 10, LABELS[1]), columns=COLUMNS)
+  df3 = pd.DataFrame(generate_entries(200, 1, 10, LABELS[2]), columns=COLUMNS)
   
   return pd.concat([df1, df2, df3]).fillna(0)
 
@@ -116,19 +116,19 @@ X, y, feature_cols = get_feature_data_class_data_and_columns(data)
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=1) # 70% training and 30% test
 
 # Create Decision Tree classifer object
-clf = DecisionTreeClassifier()
+dt_clf = DecisionTreeClassifier()
 # Create Random Forest Classifier object
-rclf = RandomForestClassifier(n_estimators=100)
+rf_clf = RandomForestClassifier(n_estimators=100)
 
 # Train Decision Tree Classifer
-clf = clf.fit(X_train, y_train)
+dt_clf = dt_clf.fit(X_train, y_train)
 # Train Random Forest Classifer
-rclf = rclf.fit(X_train, y_train)
+rf_clf = rf_clf.fit(X_train, y_train)
 
-# Predict the response for test dataset
-y_pred = clf.predict(X_test)
-# Predict the response for test dataset
-rf_y_pred = rclf.predict(X_test)
+# Predict the response for test dataset (Decision Tree)
+dt_y_pred = dt_clf.predict(X_test)
+# Predict the response for test dataset (Random Forest)
+rf_y_pred = rf_clf.predict(X_test)
 
 random_entries = pd.DataFrame(generate_entries(5, 1, 10), columns=COLUMNS).fillna(0)
 random_data, _, _, = get_feature_data_class_data_and_columns(random_entries)
@@ -141,17 +141,26 @@ for col in feature_cols:
 random_data = random_data[feature_cols]
 
 print(random_data)
-random_pred = clf.predict(random_data)
-print(random_pred)
+
+dt_random_pred = dt_clf.predict(random_data)
+dt_prob = dt_clf.predict_proba(random_data)
+print(dt_random_pred)
+print(dt_prob)
+
+rf_random_pred = rf_clf.predict(random_data)
+rf_prob = rf_clf.predict_proba(random_data)
+print(rf_random_pred)
+print(rf_prob)
 
 # Calculating feature importance
-feat_imp = calculate_feature_importance(clf, feature_cols)
-print(feat_imp)
-feat_imp = calculate_feature_importance(rclf, feature_cols)
-print(feat_imp)
+dt_feat_imp = calculate_feature_importance(dt_clf, feature_cols)
+print(dt_feat_imp)
+rf_feat_imp = calculate_feature_importance(rf_clf, feature_cols)
+print(rf_feat_imp)
 
 # Model Accuracy, how often is the classifier correct?
-print("Decision Tree Accuracy: ", metrics.accuracy_score(y_test, y_pred))
+print("Decision Tree Accuracy: ", metrics.accuracy_score(y_test, dt_y_pred))
 print("Random Forest Accuracy: ", metrics.accuracy_score(y_test, rf_y_pred))
 
-visualize_classifier(clf, feature_cols)
+# Visualize Decision Tree classifier
+visualize_classifier(dt_clf, feature_cols)
