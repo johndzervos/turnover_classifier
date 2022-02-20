@@ -9,6 +9,7 @@ ipython
 # Load libraries
 import pandas as pd
 from sklearn.tree import DecisionTreeClassifier, export_graphviz
+from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import train_test_split
 from sklearn import metrics
 from six import StringIO  
@@ -67,7 +68,7 @@ def generate_dataset():
   """
   Generate dataset with specific classes
   """
-  df1 = pd.DataFrame(generate_entries(100, 1, 10, LABELS[0]), columns=COLUMNS)
+  df1 = pd.DataFrame(generate_entries(100, 1, 5, LABELS[0]), columns=COLUMNS)
   df2 = pd.DataFrame(generate_entries(100, 5, 10, LABELS[1]), columns=COLUMNS)
   df3 = pd.DataFrame(generate_entries(100, 1, 10, LABELS[2]), columns=COLUMNS)
   
@@ -116,12 +117,18 @@ X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_
 
 # Create Decision Tree classifer object
 clf = DecisionTreeClassifier()
+# Create Random Forest Classifier object
+rclf = RandomForestClassifier(n_estimators=100)
 
 # Train Decision Tree Classifer
 clf = clf.fit(X_train, y_train)
+# Train Random Forest Classifer
+rclf = rclf.fit(X_train, y_train)
 
 # Predict the response for test dataset
 y_pred = clf.predict(X_test)
+# Predict the response for test dataset
+rf_y_pred = rclf.predict(X_test)
 
 random_entries = pd.DataFrame(generate_entries(5, 1, 10), columns=COLUMNS).fillna(0)
 random_data, _, _, = get_feature_data_class_data_and_columns(random_entries)
@@ -140,8 +147,11 @@ print(random_pred)
 # Calculating feature importance
 feat_imp = calculate_feature_importance(clf, feature_cols)
 print(feat_imp)
+feat_imp = calculate_feature_importance(rclf, feature_cols)
+print(feat_imp)
 
 # Model Accuracy, how often is the classifier correct?
-print("Accuracy: ", metrics.accuracy_score(y_test, y_pred))
+print("Decision Tree Accuracy: ", metrics.accuracy_score(y_test, y_pred))
+print("Random Forest Accuracy: ", metrics.accuracy_score(y_test, rf_y_pred))
 
 visualize_classifier(clf, feature_cols)
