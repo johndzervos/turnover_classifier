@@ -6,20 +6,22 @@ graphviz
 pydotplus
 ipython
 """
+
 # Load libraries
 import pandas as pd
 from sklearn.tree import DecisionTreeClassifier, export_graphviz
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import train_test_split
 from sklearn import metrics
-from six import StringIO  
+from six import StringIO
 from pydotplus import graph_from_dot_data
 from IPython.display import Image 
 import random
 import numpy as np
 
-LABELS = ['aa', 'bb', 'cc']
+LABELS = ['Class1', 'Class2', 'Class3']
 COLUMNS = [
+    'ID',
     'f1',
     'f2',
     'f3',
@@ -42,6 +44,7 @@ def generate_entries(cnt, low=1, high=10, label=None):
   """
   return [
     [
+        f"id_{i}", # Unique id
         random.randint(low, high),  # f1 Int
         random_int_or_None(low, high),  # f2 Int or None
         random.randint(low, high*100)/100,  # f3 Float
@@ -50,7 +53,7 @@ def generate_entries(cnt, low=1, high=10, label=None):
         random.choice(BOOL),  # f6 Boolean
         label
     ]
-    for _ in range(cnt)
+    for i in range(cnt)
   ]
 
 def random_int_or_None(low, high):
@@ -68,22 +71,26 @@ def generate_dataset():
   """
   Generate dataset with specific classes
   """
-  df1 = pd.DataFrame(generate_entries(200, 1, 5, LABELS[0]), columns=COLUMNS)
+  # df0 = pd.DataFrame(generate_entries(200, 1, 10, None), columns=COLUMNS)
+  df1 = pd.DataFrame(generate_entries(400, 1, 5, LABELS[0]), columns=COLUMNS)
   df2 = pd.DataFrame(generate_entries(200, 5, 10, LABELS[1]), columns=COLUMNS)
-  df3 = pd.DataFrame(generate_entries(200, 1, 10, LABELS[2]), columns=COLUMNS)
+  df3 = pd.DataFrame(generate_entries(300, 1, 10, LABELS[2]), columns=COLUMNS)
   
-  return pd.concat([df1, df2, df3]).fillna(0)
+  # return pd.concat([df0, df1])
+  return pd.concat([df1, df2, df3])
+
+def clean_data(data):
+  """
+  Replace None values and vectorize categorical columns
+  """
+  return pd.get_dummies(data.fillna(0), columns=CATEGORICAL_COLUMNS)
 
 def get_feature_data_class_data_and_columns(data):
   """
   Return the feature data, the class column and the list of the feature columns
   In case of categorical data, a new column is created for each of the provided category
   """
-  print(data)
-  # Cope with categorical data
-  data = pd.get_dummies(data, columns=CATEGORICAL_COLUMNS)
-  print(data)
-  feature_data = data.loc[:, data.columns!=CLASS_COLUMN]
+  feature_data = data.loc[:, ~data.columns.isin([CLASS_COLUMN, 'ID'])]
   return feature_data, data[CLASS_COLUMN], list(feature_data.columns)
 
 def calculate_feature_importance(clf, feature_cols):
@@ -91,7 +98,7 @@ def calculate_feature_importance(clf, feature_cols):
   feat_imp_dict = dict(zip(feature_cols, clf.feature_importances_))
   feat_imp = pd.DataFrame.from_dict(feat_imp_dict, orient='index')
   feat_imp.rename(columns = {0:'FeatureImportance'}, inplace = True)
-  feat_imp = feat_imp.sort_values(by=['FeatureImportance'], ascending=False).head()
+  feat_imp = feat_imp.sort_values(by=['FeatureImportance'], ascending=False)
   return feat_imp
 
 def visualize_classifier(clf, feature_cols):
@@ -110,6 +117,10 @@ def visualize_classifier(clf, feature_cols):
   Image(graph.create_png())
 
 data = generate_dataset()
+
+# Clean data
+data = clean_data(data)
+
 X, y, feature_cols = get_feature_data_class_data_and_columns(data)
 
 # Split dataset into training set and test set
@@ -130,8 +141,9 @@ dt_y_pred = dt_clf.predict(X_test)
 # Predict the response for test dataset (Random Forest)
 rf_y_pred = rf_clf.predict(X_test)
 
-random_entries = pd.DataFrame(generate_entries(5, 1, 10), columns=COLUMNS).fillna(0)
-random_data, _, _, = get_feature_data_class_data_and_columns(random_entries)
+random_entries = pd.DataFrame(generate_entries(5, 1, 10), columns=COLUMNS)
+random_data = clean_data(random_entries)
+random_data, _, _, = get_feature_data_class_data_and_columns(random_data)
 
 # Fill empty columns with zeros
 for col in feature_cols:
@@ -144,12 +156,13 @@ print(random_data)
 
 dt_random_pred = dt_clf.predict(random_data)
 dt_prob = dt_clf.predict_proba(random_data)
-print(dt_random_pred)
-print(dt_prob)
 
 rf_random_pred = rf_clf.predict(random_data)
 rf_prob = rf_clf.predict_proba(random_data)
-print(rf_random_pred)
+
+print("Decision tree predictions: ", dt_random_pred)
+print("Random forest predictions: ", rf_random_pred)
+print(dt_prob)
 print(rf_prob)
 
 # Calculating feature importance
